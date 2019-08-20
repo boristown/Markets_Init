@@ -6,11 +6,12 @@ import datetime
 import time
 import mypsw
 
-mode = 2
+mode = 3
 
 markets_type = {
     1: "加密货币",
-    2: "全球股指"
+    2: "全球股指",
+    3: "商品期货"
     }
 
 patterns = {
@@ -66,22 +67,38 @@ patterns = {
 	#    <td class="pid-954522-time" data-value="1566287819">15:56:59</td>
 	#    <td class="icon"><span class="redClockIcon">&nbsp;</span></td>
     #</tr>
-    2: r'<tr>.+?<a\stitle="([^><"]+)"\shref=".+?/indices/([^><"]+).+?boundblank="">([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>'
+    2: r'<tr>.+?<a\stitle="([^><"]+)"\shref=".+?/indices/([^><"]+).+?boundblank="">([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>',
+    #<tr>
+    #	<td class="flag"><span title="" class="ceFlags gold">&nbsp;</span></td>
+    #	<td class="bold left plusIconTd noWrap elp"><a title="黄金期货" href="/commodities/gold" target="_blank" boundblank="">黄金</a><span class="alertBellGrayPlus js-plus-icon genToolTip oneliner" data-tooltip="创建提醒" data-name="黄金期货 (F)" data-id="8830"></span></td>
+	#    <td class="left noWrap">2019年12月 </td>
+    #    <td class="pid-8830-last">1,511.25</td>
+    #    <td class="pid-8830-high">1,512.45</td>
+   	#    <td class="pid-8830-low">1,503.10</td>
+   	#    <td class="bold redFont pid-8830-pc">-0.35</td>
+   	#    <td class="bold redFont pid-8830-pcp">-0.02%</td>
+   	#    <td class="pid-8830-time" data-value="1566290438">16:40:38</td>
+   	#    <td class="icon"><span class="greenClockIcon">&nbsp;</span></td>
+    #</tr>
+    3: r'<tr>.+?<a\stitle="([^><"]+)"\shref=".+?/commodities/([^><"]+).+?boundblank="">([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>'
     }
 
 html_path = {
     1: "HTML\\*数字货币*.htm*",
-    2: "HTML\\*股指*.htm*"
+    2: "HTML\\*股指*.htm*",
+    3: "HTML\\*商品期货*.htm*"
     }
 
 base_currency_en = {
     1: "USD",
-    2: ""
+    2: "",
+    3: "USD"
     }
 
 base_currency_zh = {
     1: "美元",
-    2: ""
+    2: "",
+    3: "美元",
     }
 
 dirs = glob.glob( html_path[mode] )
