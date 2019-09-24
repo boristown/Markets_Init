@@ -6,12 +6,24 @@ import datetime
 import time
 import mypsw
 
-mode = 3
+mode = 6
 
 markets_type = {
     1: "加密货币",
     2: "全球股指",
-    3: "商品期货"
+    3: "商品期货",
+    4: "外汇",
+    5: "全球股指",
+    6: "股票",
+    }
+
+title_index={
+    1:1,
+    2:1,
+    3:1,
+    4:1,
+    5:2,
+    6:2,
     }
 
 patterns = {
@@ -80,25 +92,53 @@ patterns = {
    	#    <td class="pid-8830-time" data-value="1566290438">16:40:38</td>
    	#    <td class="icon"><span class="greenClockIcon">&nbsp;</span></td>
     #</tr>
-    3: r'<tr>.+?<a\stitle="([^><"]+)"\shref=".+?/commodities/([^><"]+).+?boundblank="">([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>'
+    3: r'<tr>.+?<a\stitle="([^><"]+)"\shref=".+?/commodities/([^><"]+).+?boundblank="">([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>',
+    #<tr id="pair_650">
+    #<td class="icon">
+    #<span class="pid-650-arrowSmall greenArrowIcon"></span>
+    #</td>
+    #<td class="bold left noWrap elp plusIconTd">
+    #<a href="https://cn.investing.com/currencies/usd-krw" title="USD/KRW - 美元 韩元" target="_blank" boundblank="">美元/韩元</a>
+    #<span data-name="USD/KRW" data-id="650" class="alertBellGrayPlus js-plus-icon genToolTip oneliner" data-tooltip="创建提醒">
+    #</span></td>
+    #<td class="left noWrap">USD/KRW</td>
+    #<td class="pid-650-bid">1,193.30</td>
+    #<td class="pid-650-ask">1,195.30</td>
+    #<td class="pid-650-high">1,195.01</td>
+    #<td class="pid-650-low">1,190.81</td>
+    #<td class="bold pid-650-pc greenFont">+1.17</td>
+    #<td class="bold pid-650-pcp greenFont">+0.10%</td>
+    #<td class=" pid-650-time" data-value="1569223011">15:16:51</td></tr>
+    4: r'<tr.+?<a\shref=".+?/currencies/([^><"]+)"\stitle="([^><"]+)".+?>([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>',
+    5: r'<tr.+?<a\shref=".+?/indices/([^><"]+)"\stitle="([^><"]+)".+?>([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>',
+    6: r'<tr.+?<a\shref=".+?/equities/([^><"]+)"\stitle="([^><"]+)".+?>([^><"]+)</a>.+?data-name="([^><"]+)"\sdata-id="(\d+)".+?</tr>',
     }
 
 html_path = {
     1: "HTML\\*数字货币*.htm*",
-    2: "HTML\\*股指*.htm*",
-    3: "HTML\\*商品期货*.htm*"
+    2: "HTML\\*全球主要股指*.htm*",
+    3: "HTML\\*商品期货*.htm*",
+    4: "HTML\\*汇率*.htm*",
+    5: "HTML\\*全球股市行情指数*.htm*",
+    6: "HTML\\*股票市场最新行情*.htm*",
     }
 
 base_currency_en = {
     1: "USD",
     2: "",
-    3: "USD"
+    3: "USD",
+    4: "",
+    5: "",
+    6: "",
     }
 
 base_currency_zh = {
     1: "美元",
     2: "",
     3: "美元",
+    4: "",
+    5: "",
+    6: "",
     }
 
 dirs = glob.glob( html_path[mode] )
@@ -123,14 +163,20 @@ for file_path in dirs:
         symbol_dict[symbol_alias2] = symbol_alias2
         symbol_dict[symbol_alias3] = symbol_alias3
         symbol_dict[symbol_alias4] = symbol_alias4
-
         for symbol_alias in symbol_dict:
             if symbol_alias not in insert_dict:
+                title_flag = ''
+                if title_index[mode] == 1 and symbol_alias1 == symbol_alias:
+                    title_flag = 'X'
+                if title_index[mode] == 2 and symbol_alias2 == symbol_alias:
+                    title_flag = 'X'
                 insert_val.append((
                         symbol_alias,
                         str(symbol_id),
-                        markets_type[mode]
+                        markets_type[mode],
+                            title_flag
                         ))
+                title_flag = ''
                 insert_dict[symbol_alias] = symbol_alias
             if base_currency_en[mode]:
                 symbol_alias_curr_en = symbol_alias+base_currency_en[mode]
@@ -138,7 +184,8 @@ for file_path in dirs:
                     insert_val.append((
                             symbol_alias_curr_en,
                             str(symbol_id),
-                            markets_type[mode]
+                            markets_type[mode],
+                            ''
                             ))
                     insert_dict[symbol_alias_curr_en] = symbol_alias_curr_en
             if base_currency_zh[mode]:
@@ -147,7 +194,8 @@ for file_path in dirs:
                     insert_val.append((
                             symbol_alias_curr_zh,
                             str(symbol_id),
-                            markets_type[mode]
+                            markets_type[mode],
+                            ''
                             ))
                     insert_dict[symbol_alias_curr_zh] = symbol_alias_curr_zh
 
@@ -162,9 +210,14 @@ mycursor = mydb.cursor()
 
 #插入或更新记录
 insert_sql = "INSERT INTO symbol_alias ("  \
-    "SYMBOL_ALIAS, SYMBOL, MARKET_TYPE" \
+    "SYMBOL_ALIAS, SYMBOL, MARKET_TYPE, TITLE_FLAG" \
     ") VALUES (" \
-    "%s, %s, %s)"
+    "%s, %s, %s, %s)" \
+    " ON DUPLICATE KEY UPDATE " \
+    "SYMBOL_ALIAS = values(SYMBOL_ALIAS)," \
+    "SYMBOL = values(SYMBOL)," \
+    "MARKET_TYPE = values(MARKET_TYPE)," \
+    "TITLE_FLAG = values(TITLE_FLAG)" \
 
 mycursor.executemany(insert_sql, insert_val)
 mydb.commit()    # 数据表内容有更新，必须使用到该语句
